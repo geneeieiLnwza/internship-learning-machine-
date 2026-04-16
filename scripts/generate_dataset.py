@@ -56,7 +56,7 @@ df['Yield_kg_per_ha'] = df.apply(calculate_yield, axis=1)
 df = df.round(2)
 
 # Save
-file_path = 'FarmTwin_Yield_Dataset.csv'
+file_path = 'data/FarmTwin_Yield_Dataset.csv'
 df.to_csv(file_path, index=False)
 print(f"✅ Generated {n_samples} realistic agricultural simulation records!")
 print(f"Saved to: {file_path}")

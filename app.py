@@ -21,14 +21,14 @@ st.markdown("""
 # Load model and encoder
 @st.cache_resource
 def load_models():
-    model = joblib.load('farmtwin_model.pkl')
-    encoder = joblib.load('farmtwin_encoder.pkl')
+    model = joblib.load('models/farmtwin_model.pkl')
+    encoder = joblib.load('models/farmtwin_encoder.pkl')
     return model, encoder
 
 try:
     model, encoder = load_models()
 except FileNotFoundError:
-    st.error("ไม่พบไฟล์โมเดล กรุณารันคำสั่ง `python3 train_farmtwin_model.py` ก่อนครับ")
+    st.error("ไม่พบไฟล์โมเดล กรุณารันคำสั่ง `python3 scripts/train_model.py` ก่อนครับ")
     st.stop()
 
 st.title("🌱 FarmTwin: Digital Twin Agriculture Simulator")

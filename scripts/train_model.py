@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import joblib
 
 print("Loading dataset...")
-df = pd.read_csv('FarmTwin_Yield_Dataset.csv')
+df = pd.read_csv('data/FarmTwin_Yield_Dataset.csv')
 
 # Features and target
 X = df[['Crop_Type', 'Temperature_C', 'Rainfall_mm', 'Irrigation_mm', 'N_Fertilizer', 'P_Fertilizer', 'K_Fertilizer']]
@@ -33,6 +33,6 @@ print(f"✅ R2 Score (Accuracy): {r2_score(y_test, y_pred):.4f}")
 print(f"✅ Mean Squared Error: {mean_squared_error(y_test, y_pred):.2f}")
 
 # Save the model and encoder for the simulator
-joblib.dump(model, 'farmtwin_model.pkl')
-joblib.dump(encoder, 'farmtwin_encoder.pkl')
-print("Model (farmtwin_model.pkl) and Encoder (farmtwin_encoder.pkl) saved successfully!")
+joblib.dump(model, 'models/farmtwin_model.pkl')
+joblib.dump(encoder, 'models/farmtwin_encoder.pkl')
+print("Model (farmtwin_model.pkl) and Encoder (farmtwin_encoder.pkl) saved successfully in models/ directory!")
