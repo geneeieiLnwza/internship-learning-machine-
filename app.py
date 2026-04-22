@@ -11,6 +11,7 @@ sys.path.insert(0, '.')
 
 from farmtwin.simulation import simulate, run_all_scenarios, predict_future, PREDEFINED_SCENARIOS
 from farmtwin.decision import recommend_fertilizer, recommend_crop, assess_risk
+from farmtwin.explainability import get_feature_importance, generate_explanation_text
 
 # ─── Page Config ──────────────────────────────────────────────────
 st.set_page_config(page_title="FarmTwin v2", page_icon="F", layout="wide")
@@ -21,8 +22,11 @@ st.markdown("""
     .stTabs [data-baseweb="tab"] {
         background-color: #1a1a2e; color: white; border-radius: 8px;
         padding: 8px 16px;
+        border: none !important;
     }
-    .stTabs [aria-selected="true"] { background-color: #16813d; }
+    .stTabs [aria-selected="true"] { background-color: #16813d; color: white; }
+    .stTabs [data-baseweb="tab-highlight"] { display: none !important; }
+    .stTabs [data-baseweb="tab-border"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -83,13 +87,14 @@ st.caption("AI-powered simulation system for smart farming decisions")
 
 
 # ─── Tabs ─────────────────────────────────────────────────────────
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Yield Prediction",
     "What-If Simulation",
     "Scenario Analysis",
     "Future Prediction",
     "Decision Support",
-    "Model Comparison"
+    "Model Comparison",
+    "Explainable AI (XAI)"
 ])
 
 
@@ -220,6 +225,27 @@ with tab6:
 
     st.success("ANN achieved the highest R2 (0.933). Random Forest (0.926) is close and more stable.")
     st.info("Ref Paper 8: All our models decisively beat the Baseline (Mean Yield), proving ML effectiveness.")
+
+
+# ═══════════ TAB 7: EXPLAINABLE AI (XAI) ═════════════════════════
+with tab7:
+    st.header("Explainable AI (XAI)")
+    st.caption("Addressing the Black-Box problem by explaining which factors drive the yield predictions.")
+
+    xai_df = get_feature_importance(model, encoder)
+    if xai_df is not None:
+        c1, c2 = st.columns([2, 1])
+        with c1:
+            st.subheader("Global Feature Importance")
+            # Top 10 features for cleaner UI
+            chart_data = xai_df.head(10).set_index("Feature")[["Importance (%)"]]
+            st.bar_chart(chart_data)
+        with c2:
+            st.subheader("Interpretation")
+            st.info(generate_explanation_text(xai_df, top_n=4))
+            st.write("*(Factors like Temperature, Rainfall, and Fertilizer typically show high impact, validating the model against agronomic principles.)*")
+    else:
+        st.warning("The current model does not support feature importance extraction.")
 
 
 # ─── Footer ───────────────────────────────────────────────────────
