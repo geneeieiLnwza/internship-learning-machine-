@@ -18,7 +18,7 @@ def train_random_forest(X_train, y_train, n_estimators=200, random_state=42):
     """Train a Random Forest Regressor."""
     model = RandomForestRegressor(n_estimators=n_estimators, random_state=random_state, n_jobs=-1)
     model.fit(X_train, y_train)
-    print(f"✅ Random Forest trained ({n_estimators} trees)")
+    print(f" Random Forest trained ({n_estimators} trees)")
     return model
 
 
@@ -26,7 +26,7 @@ def train_linear_model(X_train, y_train):
     """Train a Linear Regression baseline."""
     model = LinearRegression()
     model.fit(X_train, y_train)
-    print(f"✅ Linear Regression trained")
+    print(f" Linear Regression trained")
     return model
 
 
@@ -49,7 +49,7 @@ def train_ann(X_train, y_train, epochs=100, batch_size=32):
         verbose=False
     )
     model.fit(X_train, y_train)
-    print(f"✅ ANN trained (Dense 64 → 32, {epochs} epochs)")
+    print(f" ANN trained (Dense 64 → 32, {epochs} epochs)")
     return model
 
 
@@ -90,7 +90,7 @@ def stacking_model(X_train, y_train, X_test, rf_model, ann_model):
     meta_X_test = np.column_stack([rf_test_pred, ann_test_pred])
 
     stacked_pred = meta_model.predict(meta_X_test)
-    print(f"✅ Stacking ensemble built (RF + ANN → Linear meta-learner)")
+    print(f" Stacking ensemble built (RF + ANN → Linear meta-learner)")
     return stacked_pred, meta_model
 
 
@@ -105,7 +105,7 @@ def baseline_mean(y_train, y_test):
     """
     mean_yield = y_train.mean()
     baseline_pred = np.full(len(y_test), mean_yield)
-    print(f"✅ Baseline (mean yield): {mean_yield:.2f} kg/ha")
+    print(f" Baseline (mean yield): {mean_yield:.2f} kg/ha")
     return baseline_pred
 
 
@@ -127,7 +127,7 @@ def evaluate_model(name, y_true, y_pred):
     """Evaluate and print metrics for a model."""
     rmse = calculate_rmse(y_true, y_pred)
     r2 = calculate_r2(y_true, y_pred)
-    print(f"  📊 {name:25s} | RMSE: {rmse:10.2f} | R²: {r2:.4f}")
+    print(f"   {name:25s} | RMSE: {rmse:10.2f} | R²: {r2:.4f}")
     return {'model': name, 'RMSE': round(rmse, 2), 'R2': round(r2, 4)}
 
 
@@ -155,16 +155,11 @@ def save_model(model, name, directory='models'):
     os.makedirs(directory, exist_ok=True)
     path = os.path.join(directory, f'{name}.pkl')
     joblib.dump(model, path)
-    print(f"💾 Saved: {path}")
+    print(f" Saved: {path}")
     return path
 
 
-def load_model(name, directory='models'):
-    """Load a model from disk."""
-    path = os.path.join(directory, f'{name}.pkl')
-    model = joblib.load(path)
-    print(f"📂 Loaded: {path}")
-    return model
+
 
 
 if __name__ == '__main__':
@@ -197,7 +192,7 @@ if __name__ == '__main__':
         'Linear Regression': pred_lr,
         'Random Forest': pred_rf,
         'Neural Network (ANN)': pred_ann,
-        'Stacking (RF+ANN) 🔥': pred_stack,
+        'Stacking (RF+ANN) ': pred_stack,
     })
 
     # Save models

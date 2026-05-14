@@ -13,28 +13,10 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 def load_full_dataset(path='data/FarmTwin_Dataset_v2.csv'):
     """Load the complete FarmTwin dataset."""
     df = pd.read_csv(path)
-    print(f"✅ Loaded dataset: {df.shape[0]} rows, {df.shape[1]} columns")
+    print(f"Loaded dataset: {df.shape[0]} rows, {df.shape[1]} columns")
     return df
 
-def load_weather_data(df):
-    """Extract weather-related columns."""
-    cols = ['Temperature_C', 'Rainfall_mm', 'Humidity_pct']
-    return df[cols].copy()
 
-def load_soil_data(df):
-    """Extract soil-related columns."""
-    cols = ['Soil_Type', 'Soil_Moisture_pct']
-    return df[cols].copy()
-
-def load_crop_data(df):
-    """Extract crop and context columns."""
-    cols = ['Crop_Type', 'Season', 'Year', 'Location']
-    return df[cols].copy()
-
-def load_management_data(df):
-    """Extract farm management (controllable) columns."""
-    cols = ['Irrigation_mm', 'N_Fertilizer', 'P_Fertilizer', 'K_Fertilizer']
-    return df[cols].copy()
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -62,20 +44,11 @@ def clean_data(df):
         if col in df.columns:
             df[col] = df[col].clip(lower=0)
 
-    print(f"✅ Data cleaned. Remaining NaN: {df.isnull().sum().sum()}")
+    print(f"Data cleaned. Remaining NaN: {df.isnull().sum().sum()}")
     return df
 
 
-def normalize_data(df, numeric_cols=None):
-    """Normalize numeric features using StandardScaler."""
-    if numeric_cols is None:
-        numeric_cols = ['Temperature_C', 'Rainfall_mm', 'Humidity_pct',
-                        'Soil_Moisture_pct', 'Irrigation_mm',
-                        'N_Fertilizer', 'P_Fertilizer', 'K_Fertilizer']
-    scaler = StandardScaler()
-    df_scaled = df.copy()
-    df_scaled[numeric_cols] = scaler.fit_transform(df[numeric_cols])
-    return df_scaled, scaler
+
 
 
 def feature_engineering(df):
@@ -91,41 +64,22 @@ def feature_engineering(df):
     # N ratio (nitrogen dominance)
     df['N_Ratio'] = df['N_Fertilizer'] / (df['Total_NPK'] + 1)
 
-    print(f"✅ Feature engineering done. New columns: Total_Water, Total_NPK, N_Ratio")
+    print(f"Feature engineering done. New columns: Total_Water, Total_NPK, N_Ratio")
     return df
 
 
-def encode_categoricals(df, categorical_cols=None):
-    """One-hot encode categorical features."""
-    if categorical_cols is None:
-        categorical_cols = ['Crop_Type', 'Soil_Type', 'Season', 'Location']
 
-    encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
-    encoded = encoder.fit_transform(df[categorical_cols])
-    encoded_df = pd.DataFrame(
-        encoded,
-        columns=encoder.get_feature_names_out(categorical_cols),
-        index=df.index
-    )
-
-    df_out = pd.concat([df.drop(columns=categorical_cols), encoded_df], axis=1)
-    print(f"✅ Encoded {len(categorical_cols)} categorical columns → {encoded_df.shape[1]} features")
-    return df_out, encoder
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 3. TIME-BASED SPLIT (🔥 Key differentiator per Paper 8)
+# 3. TIME-BASED SPLIT ( Key differentiator per Paper 8)
 # ═══════════════════════════════════════════════════════════════════
 
 def time_based_split(df, split_year=2022):
-    """
-    Split data by year — NOT random!
-    Train on past data, test on future data.
-    This ensures the model is evaluated on its ability to predict the future.
-    """
+    
     train = df[df['Year'] < split_year].copy()
     test = df[df['Year'] >= split_year].copy()
-    print(f"✅ Time-based split at year {split_year}")
+    print(f" Time-based split at year {split_year}")
     print(f"   Train: {len(train)} rows (years < {split_year})")
     print(f"   Test:  {len(test)} rows (years ≥ {split_year})")
     return train, test
@@ -189,6 +143,6 @@ def prepare_data(path='data/FarmTwin_Dataset_v2.csv', split_year=2022):
 
 
 if __name__ == '__main__':
-    X_train, X_test, y_train, y_test, enc, scl = prepare_data()
-    print("\n✅ Data Layer ready!")
+    X_train, X_test, y_train, y_test, _, _ = prepare_data()
+    print("\n Data Layer ready!")
     print(f"Features: {list(X_train.columns)}")

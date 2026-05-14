@@ -128,31 +128,59 @@ def run_all_scenarios(model, encoder, scaler, base_params):
 # 3. TIME SIMULATION
 # ═══════════════════════════════════════════════════════════════════
 
-def predict_future(model, encoder, scaler, base_params, years_ahead=5):
+def predict_future(model, encoder, scaler, base_params, years_ahead=5,
+                    climate_scenario='moderate', n_simulations=100, data_dir='data'):
     """
-    Simulate future yields by adjusting climate trends.
-    Assumes gradual warming + rainfall variability over time.
+    Simulate future yields using data-driven climate projections.
+
+    Uses historical rainfall trends (1901–2015) and IPCC AR6 warming rates
+    with Monte Carlo sampling to produce confidence bands (P10/P50/P90).
+
+    Args:
+        climate_scenario: 'optimistic' (SSP1-2.6), 'moderate' (SSP2-4.5), 'pessimistic' (SSP5-8.5)
+        n_simulations: number of Monte Carlo runs (default 100)
+    Returns:
+        DataFrame with Year, Yield_P10, Yield_P50, Yield_P90, Temp_Change, Rain_Change
     """
-    results = []
+    from farmtwin.climate_trends import generate_climate_projections
+
+    region = base_params.get('Location', 'Region_Central')
     current_year = base_params.get('Year', 2024)
 
+    # Generate climate projections from historical data + IPCC
+    projections = generate_climate_projections(
+        region, years_ahead, climate_scenario, n_simulations, data_dir
+    )
+
+    temp_changes = projections['temp_changes']        # (n_sim, years)
+    rain_changes_pct = projections['rain_changes_pct']  # (n_sim, years)
+    summary = projections['summary']
+
+    results = []
     for y in range(years_ahead):
         future_year = current_year + y
-        # Climate change trends (simplified)
-        temp_increase = y * 0.15  # +0.15°C per year
-        rain_change_pct = np.random.uniform(-5, 5)  # random ±5% rainfall
+        yields = []
 
-        changes = {
-            'Temperature_C': temp_increase,
-            'Rainfall_mm': f'{rain_change_pct:.1f}%'
-        }
+        # Run model for each Monte Carlo simulation
+        for sim in range(n_simulations):
+            changes = {
+                'Temperature_C': float(temp_changes[sim, y]),
+                'Rainfall_mm': f'{rain_changes_pct[sim, y]:.1f}%'
+            }
+            _, simulated, _ = simulate(model, encoder, scaler, base_params, changes)
+            yields.append(max(0, simulated))
 
-        baseline, simulated, diff = simulate(model, encoder, scaler, base_params, changes)
+        yields = np.array(yields)
+        row = summary.iloc[y]
+
         results.append({
             'Year': future_year,
-            'Predicted_Yield': round(simulated, 2),
-            'Temp_Change': f'+{temp_increase:.2f}°C',
-            'Rain_Change': f'{rain_change_pct:+.1f}%'
+            'Yield_P10': round(np.percentile(yields, 10), 2),
+            'Yield_P50': round(np.percentile(yields, 50), 2),
+            'Yield_P90': round(np.percentile(yields, 90), 2),
+            'Temp_Change': f"+{row['Temp_Change_P50']:.2f}°C",
+            'Rain_Change': f"{row['Rain_Change_Pct_P50']:+.1f}%",
+            'Scenario': climate_scenario,
         })
 
     return pd.DataFrame(results)

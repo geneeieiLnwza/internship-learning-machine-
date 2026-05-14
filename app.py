@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0, '.')
 
 from farmtwin.simulation import simulate, run_all_scenarios, predict_future, PREDEFINED_SCENARIOS
+from farmtwin.climate_trends import get_trend_description, SCENARIO_LABELS
 from farmtwin.decision import recommend_fertilizer, recommend_crop, assess_risk
 from farmtwin.explainability import get_feature_importance, generate_explanation_text
 
@@ -35,15 +36,12 @@ st.markdown("""
 @st.cache_resource
 def load_all_models():
     rf = joblib.load('models/random_forest.pkl')
-    lr = joblib.load('models/linear_regression.pkl')
-    ann = joblib.load('models/neural_network.pkl')
-    stacking = joblib.load('models/stacking_meta.pkl')
     encoder = joblib.load('models/encoder.pkl')
     scaler = joblib.load('models/scaler.pkl')
-    return rf, lr, ann, stacking, encoder, scaler
+    return rf, encoder, scaler
 
 try:
-    rf_model, lr_model, ann_model, stacking_meta, encoder, scaler = load_all_models()
+    rf_model, encoder, scaler = load_all_models()
 except Exception as e:
     st.error(f"Failed to load models: {e}")
     st.info("Please run `python3 farmtwin/model_layer.py` first.")
@@ -164,14 +162,57 @@ with tab3:
 
 # ═══════════ TAB 4: FUTURE PREDICTION ════════════════════════════
 with tab4:
-    st.header("Future Prediction (Time Simulation)")
-    years = st.slider("Number of Years to Predict", 1, 10, 5, key='future_years')
+    st.header("Future Prediction (Data-Driven Climate Projection)")
+    st.caption("Powered by 115 years of historical rainfall data + IPCC AR6 warming scenarios")
 
-    future_df = predict_future(model, encoder, scaler, base_params, years)
-    future_df.columns = ['Year', 'Predicted Yield (kg/ha)', 'Temp Change', 'Rainfall Change']
+    fc1, fc2 = st.columns(2)
+    with fc1:
+        years = st.slider("Number of Years to Predict", 1, 10, 5, key='future_years')
+    with fc2:
+        scenario_key = st.selectbox(
+            "Climate Scenario",
+            options=list(SCENARIO_LABELS.keys()),
+            format_func=lambda x: SCENARIO_LABELS[x],
+            index=1,  # default: moderate
+            key='climate_scenario'
+        )
 
-    st.dataframe(future_df, width='stretch', hide_index=True)
-    st.line_chart(future_df.set_index('Year')['Predicted Yield (kg/ha)'])
+    with st.spinner("Running Monte Carlo simulations (100 runs)..."):
+        future_df = predict_future(model, encoder, scaler, base_params, years,
+                                   climate_scenario=scenario_key, n_simulations=100)
+
+    # ── Main metrics ──
+    if len(future_df) > 1:
+        first_yield = future_df.iloc[0]['Yield_P50']
+        last_yield = future_df.iloc[-1]['Yield_P50']
+        yield_change = last_yield - first_yield
+        yield_change_pct = (yield_change / (first_yield + 1)) * 100
+
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Current Yield (Median)", f"{first_yield:,.0f} kg/ha")
+        m2.metric(f"Year {int(future_df.iloc[-1]['Year'])} Yield",
+                  f"{last_yield:,.0f} kg/ha", f"{yield_change:+,.0f}")
+        m3.metric("Total Change", f"{yield_change_pct:+.1f}%")
+
+    # ── Confidence band chart ──
+    st.subheader("Yield Projection with Confidence Bands")
+    chart_df = future_df[['Year', 'Yield_P10', 'Yield_P50', 'Yield_P90']].copy()
+    chart_df = chart_df.set_index('Year')
+    chart_df.columns = ['P10 (Pessimistic)', 'P50 (Median)', 'P90 (Optimistic)']
+    st.line_chart(chart_df)
+    st.caption("P10 = 10th percentile (worst 10%), P50 = median, P90 = 90th percentile (best 10%)")
+
+    # ── Data table ──
+    st.subheader("Detailed Projections")
+    display_df = future_df[['Year', 'Yield_P10', 'Yield_P50', 'Yield_P90', 'Temp_Change', 'Rain_Change']].copy()
+    display_df.columns = ['Year', 'Yield P10 (kg/ha)', 'Yield Median (kg/ha)',
+                          'Yield P90 (kg/ha)', 'Temp Change', 'Rainfall Change']
+    st.dataframe(display_df, width='stretch', hide_index=True)
+
+    # ── Trend explanation from real data ──
+    with st.expander("📊 Data Sources & Methodology", expanded=False):
+        trend_text = get_trend_description(base_params['Location'], scenario_key)
+        st.markdown(trend_text)
 
 
 # ═══════════ TAB 5: DECISION SUPPORT ═════════════════════════════

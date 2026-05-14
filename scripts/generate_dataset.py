@@ -1,8 +1,4 @@
-"""
-FarmTwin v2 — Expanded Synthetic Agricultural Dataset Generator
-Generates a realistic dataset with weather, soil, crop, and management features.
-Supports time-based splitting for future prediction validation.
-"""
+
 import pandas as pd
 import numpy as np
 
@@ -107,10 +103,10 @@ df = df.round(2)
 output_path = 'data/FarmTwin_Dataset_v2.csv'
 df.to_csv(output_path, index=False)
 
-print(f"✅ Generated {N_SAMPLES} records with {len(df.columns)} features!")
-print(f"📅 Years: {min(YEARS)} - {max(YEARS)}")
-print(f"📊 Columns: {list(df.columns)}")
-print(f"💾 Saved to: {output_path}")
+print(f"Generated {N_SAMPLES} records with {len(df.columns)} features!")
+print(f"Years: {min(YEARS)} - {max(YEARS)}")
+print(f"Columns: {list(df.columns)}")
+print(f"Saved to: {output_path}")
 print(f"\n--- Sample Data ---")
 print(df.head())
 print(f"\n--- Train/Test Split Preview ---")
